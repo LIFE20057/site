@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customy – AI-First CMS</title>
+  <meta name="description" content="Manage your websites through natural language chat. Self-hosted, Docker-ready, Raspberry Pi compatible." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080b0f;
+      --bg2: #0d1117;
+      --bg3: #111820;
+      --border: rgba(255,255,255,0.07);
+      --accent: #4fffb0;
+      --accent2: #00c8ff;
+      --text: #e8edf3;
+      --muted: #5a6a7a;
+      --card: rgba(255,255,255,0.03);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* NOISE OVERLAY */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    /* GLOW BLOBS */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(79,255,176,0.08), transparent 70%);
+      top: -200px; left: -200px;
+      animation: drift1 18s ease-in-out infinite alternate;
+    }
+    .blob-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(0,200,255,0.06), transparent 70%);
+      bottom: -100px; right: -100px;
+      animation: drift2 22s ease-in-out infinite alternate;
+    }
+    @keyframes drift1 { to { transform: translate(80px, 60px); } }
+    @keyframes drift2 { to { transform: translate(-60px, -80px); } }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,11,15,0.8);
+      backdrop-filter: blur(16px);
+    }
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.3rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .btn-nav {
+      background: var(--accent);
+      color: #000 !important;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: opacity 0.2s !important;
+    }
+    .btn-nav:hover { opacity: 0.85; }
+
+    /* HERO */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      text-align: center;
+      padding: 120px 48px 80px;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(79,255,176,0.08);
+      border: 1px solid rgba(79,255,176,0.2);
+      color: var(--accent);
+      padding: 6px 16px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      animation: fadeUp 0.8s ease both;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      animation: fadeUp 0.8s 0.1s ease both;
+    }
+    h1 .line2 {
+      display: block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+      animation: fadeUp 0.8s 0.2s ease both;
+    }
+
+    .hero-ctas {
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 0.8s 0.3s ease both;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 32px rgba(79,255,176,0.2);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 48px rgba(79,255,176,0.35);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      padding: 14px 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-ghost:hover {
+      border-color: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.04);
+    }
+
+    /* SCREENSHOT AREA */
+    .hero-screenshot {
+      margin-top: 80px;
+      position: relative;
+      width: 100%;
+      max-width: 1000px;
+      animation: fadeUp 0.8s 0.4s ease both;
+    }
+    .screenshot-frame {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 40px 120px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .screenshot-bar {
+      background: var(--bg2);
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #ffbd2e; }
+    .dot-g { background: #28ca42; }
+    .screenshot-url {
+      margin-left: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      flex: 1; max-width: 300px;
+    }
+    .screenshot-body {
+      min-height: 420px;
+      background: linear-gradient(160deg, #0d1117 0%, #111820 100%);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .screenshot-placeholder {
+      text-align: center;
+      color: var(--muted);
+    }
+    .screenshot-placeholder .icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .screenshot-placeholder p { font-size: 0.85rem; }
+    .screenshot-placeholder code {
+      display: block;
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    /* Glow under screenshot */
+    .screenshot-glow {
+      position: absolute;
+      bottom: -60px; left: 50%;
+      transform: translateX(-50%);
+      width: 80%; height: 120px;
+      background: radial-gradient(ellipse, rgba(79,255,176,0.12), transparent 70%);
+      filter: blur(20px);
+      pointer-events: none;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* FEATURES */
+    .section {
+      position: relative; z-index: 1;
+      padding: 120px 48px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 64px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .feature-card {
+      background: var(--bg2);
+      padding: 36px;
+      transition: background 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(79,255,176,0.04), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover { background: var(--bg3); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      font-size: 1.8rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .feature-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .feature-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* PIPELINE */
+    .pipeline {
+      display: flex; align-items: center;
+      gap: 0;
+      margin: 48px 0;
+      flex-wrap: wrap;
+    }
+    .pipeline-step {
+      flex: 1; min-width: 160px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+    }
+    .pipeline-step .num {
+      font-size: 0.7rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .pipeline-step .name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+    .pipeline-step .desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .pipeline-arrow {
+      color: var(--accent);
+      font-size: 1.2rem;
+      padding: 0 12px;
+      flex-shrink: 0;
+    }
+
+    /* INSTALL */
+    .install-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 48px 0;
+    }
+    .install-header {
+      background: var(--bg3);
+      padding: 12px 20px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .install-header span { color: var(--accent); }
+    .install-code {
+      padding: 24px;
+      font-size: 0.85rem;
+      line-height: 2;
+      color: var(--text);
+    }
+    .install-code .comment { color: var(--muted); }
+    .install-code .cmd { color: var(--accent2); }
+    .install-code .flag { color: var(--accent); }
+
+    /* BADGES */
+    .badges {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+    .badge {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+    /* FOOTER */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 40px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    footer .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+    footer .logo span { color: var(--accent); }
+    footer p { font-size: 0.78rem; color: var(--muted); }
+    footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    footer a:hover { color: var(--accent); }
+
+    /* DIVIDER */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+      .hero { padding: 100px 24px 60px; }
+      .section { padding: 80px 24px; }
+      .pipeline { flex-direction: column; }
+      .pipeline-arrow { transform: rotate(90deg); }
+      footer { padding: 32px 24px; flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">✦ Custo<span>my</span></a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/LIFE20057/customy" target="_blank">Docs</a>
+      <a href="https://github.com/LIFE20057/customy" target="_blank" class="btn-nav">GitHub →</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">Open Source · Self-Hosted · AI-First</div>
+    <h1>
+      The CMS that<br>
+      <span class="line2">speaks your language</span>
+    </h1>
+    <p class="hero-sub">
+      Manage your websites through natural language chat.<br>
+      No code required. Runs on Docker, Raspberry Pi, anywhere.
+    </p>
+    <div class="hero-ctas">
+      <a href="https://github.com/LIFE20057/customy" target="_blank" class="btn-primary">Get Started →</a>
+      <a href="#features" class="btn-ghost">See Features</a>
+    </div>
+
+    <div class="hero-screenshot">
+      <div class="screenshot-frame">
+        <div class="screenshot-bar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <div class="screenshot-url">localhost:3000</div>
+        </div>
+        <div class="screenshot-body">
+          <!-- SOSTITUISCI QUESTO CON IL TUO SCREENSHOT -->
+          <!-- <img src="screenshot.png" alt="Customy screenshot" style="width:100%;display:block;"> -->
+          <div class="screenshot-placeholder">
+            <span class="icon">🖼️</span>
+            <p>Aggiungi il tuo screenshot qui</p>
+            <code>&lt;img src="screenshot.png"&gt;</code>
+          </div>
+        </div>
+      </div>
+      <div class="screenshot-glow"></div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <p class="section-label">// Features</p>
+    <h2 class="section-title">Everything you need,<br>nothing you don't.</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">💬</span>
+        <div class="feature-title">AI Chat Interface</div>
+        <p class="feature-desc">Claude.ai-inspired chat as the primary interface. Just describe what you want — the AI handles the HTML.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🤖</span>
+        <div class="feature-title">Multi-Agent Pipeline</div>
+        <p class="feature-desc">PlannerAgent → CoderAgent → ReviewAgent. Every edit goes through a three-step AI review before it lands.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">👁</span>
+        <div class="feature-title">Live Preview</div>
+        <p class="feature-desc">Instant iframe preview after every AI edit. See your changes in real time, no refresh needed.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🕐</span>
+        <div class="feature-title">Version History</div>
+        <p class="feature-desc">Zip snapshots before every AI edit. One click to roll back to any previous state.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📁</span>
+        <div class="feature-title">Multi-Project</div>
+        <p class="feature-desc">Manage multiple websites from a single dashboard. Each project isolated with its own file tree.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔒</span>
+        <div class="feature-title">Secure by Default</div>
+        <p class="feature-desc">JWT auth, rate limiting, path traversal prevention, HTTPS support. Production-ready out of the box.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- PIPELINE -->
+  <section class="section">
+    <p class="section-label">// How it works</p>
+    <h2 class="section-title">Three agents,<br>one perfect edit.</h2>
+
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="num">01 —</div>
+        <div class="name">PlannerAgent</div>
+        <div class="desc">Analyses your request and builds an action plan</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="num">02 —</div>
+        <div class="name">CoderAgent</div>
+        <div class="desc">Generates HTML/CSS/JS file actions</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="num">03 —</div>
+        <div class="name">ReviewAgent</div>
+        <div class="desc">Validates and fixes any issues before saving</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- INSTALL -->
+  <section class="section" id="install">
+    <p class="section-label">// Quick Start</p>
+    <h2 class="section-title">Up in 60 seconds.</h2>
+
+    <div class="badges">
+      <div class="badge"><div class="badge-dot"></div> Docker Ready</div>
+      <div class="badge"><div class="badge-dot"></div> Raspberry Pi ARM64</div>
+      <div class="badge"><div class="badge-dot"></div> Node.js</div>
+      <div class="badge"><div class="badge-dot"></div> MIT License</div>
+    </div>
+
+    <div class="install-block">
+      <div class="install-header">
+        <span>$</span> terminal
+      </div>
+      <div class="install-code">
+        <span class="comment"># Clone the repo</span><br>
+        <span class="cmd">git clone</span> https://github.com/LIFE20057/customy.git<br>
+        <span class="cmd">cd</span> customy<br><br>
+        <span class="comment"># Configure environment</span><br>
+        <span class="cmd">cp</span> .env.example .env<br><br>
+        <span class="comment"># Install &amp; start</span><br>
+        <span class="cmd">npm install</span><br>
+        <span class="cmd">npm start</span><br><br>
+        <span class="comment"># → http://localhost:3000</span>
+      </div>
+    </div>
+
+    <p style="font-size:0.82rem; color: var(--muted);">
+      # or with Docker: <code style="color:var(--accent2)">docker compose up -d</code>
+    </p>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo">✦ Custo<span>my</span></div>
+    <p>MIT License · Built with ❤️ · <a href="https://github.com/LIFE20057/customy" target="_b
